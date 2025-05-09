@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS: Productive Offensive</title>
+    <!-- CS16.CSS Library -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/ekmas/cs16.css@main/css/cs16.min.css">
+    <style>
+        /* Minimal custom styles to complement cs16.css */
+        body {
+            padding-bottom: 75px; /* Space for bottom nav */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            color: var(--text-color, #ccc); /* Fallback if var not in cs16.css */
+        }
+
+        .app-header { /* Custom header to fit the overall page structure */
+            padding: 10px 15px;
+            text-align: center;
+            background-color: var(--background-dark, #222); /* Use cs16 var if available */
+            border-bottom: 2px solid var(--border-color-light, #555);
+            margin-bottom: 15px;
+        }
+        .app-header h1 {
+            margin: 0;
+            font-size: 1.5em; /* Adjust as needed */
+            color: var(--text-color-light, #fff);
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 0 15px; /* Padding for content within cs16 window */
+            overflow-y: auto;
+        }
+
+        .section { /* Will be styled by .window from cs16.css */
+            display: none;
+            margin-bottom: 20px;
+        }
+        .section.active {
+            display: block;
+        }
+        .section h2 { /* cs16.css might style h2 within .window */
+            margin-top: 5px; /* Adjust for cs16.css window title bar */
+            margin-bottom: 15px;
+        }
+
+        /* Input group adjustments if needed, cs16 styles inputs and buttons */
+        .input-group {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        .input-group input[type="text"] {
+            flex-grow: 1;
+            margin-right: -1px; /* For connected button look */
+        }
+        /* Buttons are styled by cs16.css .btn */
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            /* cs16.css doesn't have specific list item styling for this context */
+            /* So, we add some basic structure */
+            background-color: var(--background-light, #444);
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border-color, #555);
+            border-radius: 0; /* cs16 typically has sharp edges */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-color, #ccc);
+        }
+
+        li.completed {
+            background-color: var(--background-dark, #333);
+            opacity: 0.7;
+        }
+        li.completed span.item-text {
+            text-decoration: line-through;
+            color: var(--text-color-dark, #888);
+        }
+
+        .item-info {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+        }
+        .item-info input[type="checkbox"] { /* cs16 might style this */
+            margin-right: 10px;
+            transform: scale(1.1);
+        }
+        .item-text {
+            cursor: pointer;
+            flex-grow: 1;
+        }
+        .streak-info {
+            font-size: 0.9em;
+            color: var(--text-color-light, #fff); /* Brighter for contrast */
+            margin-left: 10px;
+            font-style: italic;
+        }
+
+        /* Action buttons within list items */
+        .actions .btn { /* Use cs16.css button style */
+            margin-left: 8px;
+            padding: 5px 8px; /* Smaller buttons */
+            font-size: 0.9em;
+        }
+        /* Override cs16 button color for danger if needed */
+        .actions .btn-danger {
+             background-color: #c00; /* A typical cs1.6 red */
+             border-color: #a00;
+             color: #fff;
+        }
+        .actions .btn-danger:hover {
+            background-color: #d00;
+            border-color: #b00;
+        }
+
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--background-dark, #222);
+            display: flex;
+            height: 60px;
+            border-top: 2px solid var(--border-color-light, #555);
+        }
+        .bottom-nav .btn { /* Use .btn for nav items */
+            flex-grow: 1;
+            border-radius: 0;
+            border-right: 1px solid var(--border-color, #444);
+            margin: 0; /* Remove default cs16 btn margin */
+            font-size: 0.9em;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+        }
+        .bottom-nav .btn:last-child {
+            border-right: none;
+        }
+        .bottom-nav .btn.active-nav {
+            background-color: var(--background-light, #444); /* cs16 active state */
+            color: var(--text-color-light, #fff);
+            /* cs16.css might have an active class for buttons we could use */
+        }
+        .bottom-nav .nav-icon {
+            font-size: 1.3em;
+            margin-bottom: 2px;
+        }
+
+        .no-items {
+            padding: 20px;
+            text-align: center;
+            color: var(--text-color-dark, #888);
+        }
+        #todoSummary {
+            text-align: center;
+            margin-bottom: 10px;
+            color: var(--text-color-light, #fff);
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+    <!-- Use cs16.css 'window' for main container if desired, or just style body -->
+    <header class="header" style="margin: 10px">
+        <div class="header">CS</div>
+        <hr class="cs-hr" />
+    </header>
+
+    <div class="main-content">
+        <!-- Habit Tracker Section -->
+        <div id="habitsSection" class="section window"> <!-- Added .window class -->
+            <div class="title-bar"> <!-- cs16.css title bar -->
+                <div class="title-bar-text">Standing Orders (Habits)</div>
+                <!-- cs16.css typically has buttons here, but we don't need them for the section title -->
+            </div>
+            <div class="window-body"> <!-- cs16.css content area -->
+                <div class="input-group">
+                    <input type="text" id="newHabitInput" placeholder="New recurring mission intel...">
+                    <button class="cs-btn" onclick="addHabit()">Deploy</button>
+
+                </div>
+                <ul id="habitList"></ul>
+                <div id="noHabitsMessage" class="no-items" style="display: none;">No active missions. Stand by.</div>
+            </div>
+        </div>
+
+        <!-- Dailies Tracker Section -->
+        <div id="dailiesSection" class="section window">
+             <div class="title-bar">
+                <div class="title-bar-text">Daily Briefing (Dailies)</div>
+            </div>
+            <div class="window-body">
+                <div class="input-group">
+                    <input type="text" id="newDailyInput" placeholder="Today's tactical op...">
+                    <button class="cs-btn" onclick="addDaily()">Assign</button>
+                </div>
+                <button onclick="resetAllDailies()" class="cs-btn" id="resetDailiesButton" style="display:none; margin-bottom: 10px;">New Day Resupply</button>
+                <ul id="dailyList"></ul>
+                <div id="noDailiesMessage" class="no-items" style="display: none;">SITREP: All clear.</div>
+            </div>
+        </div>
+
+        <!-- To-Do List Section -->
+        <div id="todosSection" class="section window">
+            <div class="title-bar">
+                <div class="title-bar-text">Target List (To-Dos)</div>
+            </div>
+            <div class="window-body">
+                <div class="input-group">
+                    <input type="text" id="newTodoInput" placeholder="Objective to neutralize...">
+                    <button class="cs-btn" onclick="addTodo()">Add Target</button>
+                </div>
+                <p id="todoSummary"></p>
+                <ul id="todoList"></ul>
+                <div id="noTodosMessage" class="no-items" style="display: none;">Target list clear.</div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <!-- Using cs16.css .btn for nav items -->
+        <button id="navHabits" class="btn" onclick="showSection('habits', this)">
+            <span class="nav-icon">📰</span> Orders
+        </button>
+        <button id="navDailies" class="btn" onclick="showSection('dailies', this)">
+            <span class="nav-icon">📅</span> Briefing
+        </button>
+        <button id="navTodos" class="btn" onclick="showSection('todos', this)">
+            <span class="nav-icon">🎯</span> Targets
+        </button>
+    </nav>
+
+    <script>
+        // --- Global State & Constants ---
+        const HABITS_KEY = 'cs16App_habits'; // Changed keys slightly to avoid old data
+        const DAILIES_KEY = 'cs16App_dailies';
+        const TODOS_KEY = 'cs16App_todos';
+        const DAILIES_LAST_RESET_KEY = 'cs16App_dailiesLastReset';
+
+        let habits = [];
+        let dailies = [];
+        let todos = [];
+
+        // --- DOM Elements ---
+        const appTitleEl = document.getElementById('appTitle');
+        const sections = {
+            habits: document.getElementById('habitsSection'),
+            dailies: document.getElementById('dailiesSection'),
+            todos: document.getElementById('todosSection'),
+        };
+        const navButtons = {
+            habits: document.getElementById('navHabits'),
+            dailies: document.getElementById('navDailies'),
+            todos: document.getElementById('navTodos'),
+        };
+        const habitListEl = document.getElementById('habitList');
+        const newHabitInputEl = document.getElementById('newHabitInput');
+        const noHabitsMessageEl = document.getElementById('noHabitsMessage');
+
+        const dailyListEl = document.getElementById('dailyList');
+        const newDailyInputEl = document.getElementById('newDailyInput');
+        const resetDailiesButtonEl = document.getElementById('resetDailiesButton');
+        const noDailiesMessageEl = document.getElementById('noDailiesMessage');
+
+        const todoListEl = document.getElementById('todoList');
+        const newTodoInputEl = document.getElementById('newTodoInput');
+        const todoSummaryEl = document.getElementById('todoSummary');
+        const noTodosMessageEl = document.getElementById('noTodosMessage');
+
+
+        // --- Utility Functions ---
+        function getTodayDateString() { return new Date().toISOString().split('T')[0]; }
+        function getYesterdayDateString() {
+            const y = new Date(); y.setDate(y.getDate() - 1); return y.toISOString().split('T')[0];
+        }
+        function loadData() {
+            habits = JSON.parse(localStorage.getItem(HABITS_KEY) || '[]');
+            dailies = JSON.parse(localStorage.getItem(DAILIES_KEY) || '[]');
+            todos = JSON.parse(localStorage.getItem(TODOS_KEY) || '[]');
+        }
+        function saveData(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+
+        // --- Navigation ---
+        function showSection(sectionName, clickedButton) {
+            Object.values(sections).forEach(sec => sec.classList.remove('active'));
+            Object.values(navButtons).forEach(btn => btn.classList.remove('active-nav'));
+
+            sections[sectionName].classList.add('active');
+            if (clickedButton) clickedButton.classList.add('active-nav');
+
+            const sectionTitles = {
+                habits: "Standing Orders",
+                dailies: "Daily Briefing",
+                todos: "Target List"
+            };
+            appTitleEl.textContent = sectionTitles[sectionName] || "CS: Productive Offensive";
+
+            if (sectionName === 'habits') renderHabits();
+            else if (sectionName === 'dailies') renderDailies();
+            else if (sectionName === 'todos') renderTodos();
+        }
+
+        // --- Standing Orders (Habits) ---
+        function renderHabits() {
+            habitListEl.innerHTML = '';
+            noHabitsMessageEl.style.display = habits.length === 0 ? 'block' : 'none';
+            habits.forEach((habit, index) => {
+                const li = document.createElement('li');
+                li.className = habit.completedToday ? 'completed' : '';
+                li.innerHTML = `
+                    <div class="item-info">
+                        <input type="checkbox" ${habit.completedToday ? 'checked' : ''} onchange="toggleHabit(${index})">
+                        <span class="item-text" onclick="toggleHabit(${index})">${habit.name}</span>
+                        <span class="streak-info">Streak: ${habit.streak}</span>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-danger" onclick="deleteHabit(${index})">Abort</button>
+                    </div>`;
+                habitListEl.appendChild(li);
+            });
+        }
+        function addHabit() {
+            const name = newHabitInputEl.value.trim();
+            if (name) {
+                habits.push({ id: Date.now(), name, completedToday: false, streak: 0, lastCompletedDate: null });
+                newHabitInputEl.value = '';
+                saveData(HABITS_KEY, habits); renderHabits();
+            }
+        }
+        function toggleHabit(index) {
+            const h = habits[index], today = getTodayDateString();
+            h.completedToday = !h.completedToday;
+            if (h.completedToday) {
+                h.streak = (h.lastCompletedDate === getYesterdayDateString()) ? h.streak + 1 : 1;
+                h.lastCompletedDate = today;
+            } else if (h.lastCompletedDate === today) {
+                h.streak = Math.max(0, h.streak - 1);
+                h.lastCompletedDate = h.streak > 0 ? getYesterdayDateString() : null;
+            }
+            saveData(HABITS_KEY, habits); renderHabits();
+        }
+        function deleteHabit(index) {
+            if (confirm(`Abort mission: "${habits[index].name}"?`)) {
+                habits.splice(index, 1); saveData(HABITS_KEY, habits); renderHabits();
+            }
+        }
+        function checkHabitResets() {
+            const today = getTodayDateString(); let changed = false;
+            habits.forEach(h => {
+                if (h.lastCompletedDate && h.lastCompletedDate < today) {
+                    h.completedToday = false;
+                    if (h.lastCompletedDate < getYesterdayDateString()) h.streak = 0;
+                    changed = true;
+                }
+            });
+            if (changed) saveData(HABITS_KEY, habits);
+        }
+
+        // --- Daily Briefing (Dailies) ---
+        function renderDailies() {
+            dailyListEl.innerHTML = '';
+            noDailiesMessageEl.style.display = dailies.length === 0 ? 'block' : 'none';
+            resetDailiesButtonEl.style.display = dailies.length > 0 ? 'inline-block' : 'none';
+            dailies.forEach((daily, index) => {
+                const li = document.createElement('li');
+                li.className = daily.completed ? 'completed' : '';
+                li.innerHTML = `
+                    <div class="item-info">
+                        <input type="checkbox" ${daily.completed ? 'checked' : ''} onchange="toggleDaily(${index})">
+                        <span class="item-text" onclick="toggleDaily(${index})">${daily.name}</span>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-danger" onclick="deleteDaily(${index})">Remove</button>
+                    </div>`;
+                dailyListEl.appendChild(li);
+            });
+        }
+        function addDaily() {
+            const name = newDailyInputEl.value.trim();
+            if (name) {
+                dailies.push({ id: Date.now(), name, completed: false });
+                newDailyInputEl.value = ''; saveData(DAILIES_KEY, dailies); renderDailies();
+            }
+        }
+        function toggleDaily(index) {
+            dailies[index].completed = !dailies[index].completed;
+            saveData(DAILIES_KEY, dailies); renderDailies();
+        }
+        function deleteDaily(index) {
+            if (confirm(`Remove daily op: "${dailies[index].name}"?`)) {
+                dailies.splice(index, 1); saveData(DAILIES_KEY, dailies); renderDailies();
+            }
+        }
+        function resetAllDailies() {
+            if (confirm("Resupply all daily ops?")) {
+                dailies.forEach(d => d.completed = false);
+                localStorage.setItem(DAILIES_LAST_RESET_KEY, getTodayDateString());
+                saveData(DAILIES_KEY, dailies); renderDailies();
+            }
+        }
+        function checkDailiesResetIfNeeded() {
+            const lastReset = localStorage.getItem(DAILIES_LAST_RESET_KEY), today = getTodayDateString();
+            if (!lastReset || lastReset < today) {
+                dailies.forEach(d => d.completed = false);
+                localStorage.setItem(DAILIES_LAST_RESET_KEY, today);
+                saveData(DAILIES_KEY, dailies);
+            }
+        }
+
+        // --- Target List (To-Dos) ---
+        function renderTodos() {
+            todoListEl.innerHTML = '';
+            const rem = todos.filter(t => !t.completed).length;
+            todoSummaryEl.textContent = todos.length > 0 ? `${rem} TARGETS REMAINING OF ${todos.length}.` : '';
+            noTodosMessageEl.style.display = todos.length === 0 ? 'block' : 'none';
+            todos.forEach((todo, index) => {
+                const li = document.createElement('li');
+                li.className = todo.completed ? 'completed' : '';
+                li.innerHTML = `
+                    <div class="item-info">
+                        <input type="checkbox" ${todo.completed ? 'checked' : ''} onchange="toggleTodo(${index})">
+                        <span class="item-text" onclick="toggleTodo(${index})">${todo.text}</span>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-danger" onclick="deleteTodo(${index})">Eliminate</button>
+                    </div>`;
+                todoListEl.appendChild(li);
+            });
+        }
+        function addTodo() {
+            const text = newTodoInputEl.value.trim();
+            if (text) {
+                todos.push({ id: Date.now(), text, completed: false });
+                newTodoInputEl.value = ''; saveData(TODOS_KEY, todos); renderTodos();
+            }
+        }
+        function toggleTodo(index) {
+            todos[index].completed = !todos[index].completed;
+            saveData(TODOS_KEY, todos); renderTodos();
+        }
+        function deleteTodo(index) {
+            if (confirm(`Eliminate target: "${todos[index].text}"?`)) {
+                todos.splice(index, 1); saveData(TODOS_KEY, todos); renderTodos();
+            }
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            checkHabitResets();
+            checkDailiesResetIfNeeded();
+            showSection('habits', navButtons.habits);
+
+            [newHabitInputEl, newDailyInputEl, newTodoInputEl].forEach(input => {
+                input.addEventListener('keyup', (e) => {
+                    if (e.key === 'Enter') {
+                        if (input === newHabitInputEl) addHabit();
+                        else if (input === newDailyInputEl) addDaily();
+                        else if (input === newTodoInputEl) addTodo();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
